@@ -1,0 +1,154 @@
+---
+# Analyzer Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selfheal-analyzer
+  namespace: kube-system
+  labels:
+    app: selfheal-analyzer
+    component: selfheal-cp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: selfheal-analyzer
+  template:
+    metadata:
+      labels:
+        app: selfheal-analyzer
+        component: selfheal-cp
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: selfheal-agent
+      containers:
+        - name: analyzer
+          image: selfheal-analyzer:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--nats-url=nats://selfheal-nats:4222"
+            - "--rules-file=/etc/selfheal/rules.yaml"
+            - "--metrics-addr=:8081"
+            - "--log-level=info"
+          ports:
+            - name: metrics
+              containerPort: 8081
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/selfheal
+              readOnly: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: selfheal-config
+
+---
+# Controller Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selfheal-controller
+  namespace: kube-system
+  labels:
+    app: selfheal-controller
+    component: selfheal-cp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: selfheal-controller
+  template:
+    metadata:
+      labels:
+        app: selfheal-controller
+        component: selfheal-cp
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8082"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: selfheal-agent
+      containers:
+        - name: controller
+          image: selfheal-controller:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--nats-url=nats://selfheal-nats:4222"
+            - "--guardrails-file=/etc/selfheal/guardrails.yaml"
+            - "--metrics-addr=:8082"
+            - "--dry-run=false"
+            - "--log-level=info"
+          ports:
+            - name: metrics
+              containerPort: 8082
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/selfheal
+              readOnly: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8082
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8082
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: selfheal-config
+
+---
+# ConfigMap for analyzer + controller configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: selfheal-config
+  namespace: kube-system
+  labels:
+    component: selfheal-cp
+data:
+  # Note: actual file content is injected by kustomize or helm values
+  # Override with: kubectl create configmap selfheal-config \
+  #   --from-file=rules.yaml=config/rules.yaml \
+  #   --from-file=guardrails.yaml=config/guardrails.yaml \
+  #   -n kube-system --dry-run=client -o yaml | kubectl apply -f -
+  rules.yaml: |
+    # Loaded from config/rules.yaml — see Makefile k8s-deploy target
+  guardrails.yaml: |
+    # Loaded from config/guardrails.yaml — see Makefile k8s-deploy target

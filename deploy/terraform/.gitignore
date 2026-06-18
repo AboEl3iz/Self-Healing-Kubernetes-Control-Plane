@@ -1,0 +1,22 @@
+# Local Terraform state — do NOT commit to version control
+# Use an S3 backend for shared/team usage
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+tfplan
+
+# Personal variable overrides (may contain region, email, IPs)
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Generated kubeconfig
+kubeconfig
+kubeconfig.yaml
