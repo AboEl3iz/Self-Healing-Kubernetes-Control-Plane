@@ -1,0 +1,109 @@
+# SelfHeal-CP — Detection Rules
+# ============================================================
+
+rules:
+  # ─── CPU / Scheduler ────────────────────────────────────────────────────────
+  - id: high_runqueue_delay
+    description: "CPU runqueue latency is too high"
+    metric: cpu_runq_latency_ms
+    condition:
+      operator: ">"
+      value: 5   # 5ms
+    window: 60s
+    confidence_base: 0.95
+    suggested_cause: cpu_contention
+    suggested_action: reschedule_pod
+    enabled: true
+
+  # ─── Memory / OOM ───────────────────────────────────────────────────────────
+  - id: oom_kill_detected
+    description: "OOM kill recorded"
+    metric: oom_kill
+    condition:
+      operator: ">="
+      value: 1
+    window: 5m
+    confidence_base: 0.95
+    suggested_cause: memory_limit_too_low
+    suggested_action: patch_resource_limits
+    enabled: true
+
+  - id: high_major_page_faults
+    description: "High major page fault rate"
+    metric: page_faults_major
+    condition:
+      operator: ">"
+      value: 50
+    window: 30s
+    confidence_base: 0.80
+    suggested_cause: memory_pressure
+    suggested_action: patch_resource_limits
+    enabled: true
+
+  # ─── Disk I/O ───────────────────────────────────────────────────────────────
+  - id: high_io_wait
+    description: "High disk I/O wait"
+    metric: io_wait_ms
+    condition:
+      operator: ">"
+      value: 50
+    window: 30s
+    confidence_base: 0.80
+    suggested_cause: disk_bottleneck
+    suggested_action: reschedule_pod
+    enabled: true
+
+  # ─── Network ────────────────────────────────────────────────────────────────
+  - id: high_tcp_retransmit_rate
+    description: "TCP retransmit rate exceeds threshold"
+    metric: tcp_retransmit_rate
+    condition:
+      operator: ">"
+      value: 5
+    window: 60s
+    confidence_base: 0.95
+    suggested_cause: network_congestion
+    suggested_action: restart_pod
+    enabled: true
+
+  # ─── Syscall Latency ────────────────────────────────────────────────────────
+  - id: syscall_latency_spike
+    description: "Syscall latency is high"
+    metric: syscall_avg_latency_ms
+    condition:
+      operator: ">"
+      value: 10
+    window: 60s
+    confidence_base: 0.95
+    suggested_cause: kernel_contention
+    suggested_action: reschedule_pod
+    enabled: true
+
+  - id: high_syscall_failure_rate
+    description: "High syscall failure rate"
+    metric: syscall_failure_rate
+    condition:
+      operator: ">"
+      value: 10
+    window: 60s
+    confidence_base: 0.95
+    suggested_cause: application_error
+    suggested_action: restart_pod
+    enabled: true
+
+# ─── Correlation Boosts ─────────────────────────────────────────────────────
+correlations:
+  - signals: [oom_kill_detected, high_major_page_faults]
+    boost: +0.20
+    interpretation: "Memory exhaustion — OOM confirmed by page fault pattern"
+
+# Single-signal penalty (applied before correlation boosts)
+single_signal_penalty: -0.10
+
+# Action thresholds
+thresholds:
+  suppress:    0.60
+  log_only:    0.75
+  take_action: 0.80
+
+
