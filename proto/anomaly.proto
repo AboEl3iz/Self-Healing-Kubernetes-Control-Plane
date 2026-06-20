@@ -1,0 +1,19 @@
+syntax = "proto3";
+package selfheal.v1;
+option go_package = "github.com/karim-aboelaiz/selfheal-cp/internal/gen/proto";
+
+// AnomalyEvent is produced by the Analyzer when a confirmed anomaly is detected.
+// It carries the confidence score and suggested remediation action.
+message AnomalyEvent {
+  string          anomaly_id       = 1;  // UUID
+  string          type             = 2;  // "high_io_wait", "memory_pressure", etc.
+  double          confidence       = 3;  // 0.0–1.0 confidence score
+  string          affected_pod     = 4;  // pod name
+  string          affected_node    = 5;  // node hostname
+  string          namespace        = 6;  // Kubernetes namespace
+  repeated string signals          = 7;  // contributing signal names
+  string          suggested_cause  = 8;  // "disk_bottleneck", "memory_leak", etc.
+  string          suggested_action = 9;  // "restart_pod", "reschedule_pod", etc.
+  int64           timestamp        = 10; // Unix epoch milliseconds
+  int32           ttl_s            = 11; // seconds before anomaly expires if no action
+}

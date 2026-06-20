@@ -1,0 +1,18 @@
+syntax = "proto3";
+package selfheal.v1;
+option go_package = "github.com/karim-aboelaiz/selfheal-cp/internal/gen/proto";
+
+// OutcomeEvent is emitted after the Controller observes the result of an action.
+// It closes the feedback loop: did the action resolve the anomaly?
+message OutcomeEvent {
+  string action_id       = 1;  // UUID of the ActionEvent
+  string anomaly_id      = 2;  // UUID of the AnomalyEvent
+  bool   resolved        = 3;  // true = anomaly no longer detected
+  string resolution_type = 4;  // "immediate" | "escalated" | "failed" | "timeout"
+  int64  resolution_ms   = 5;  // milliseconds from action dispatch to resolution
+  int64  timestamp       = 6;  // Unix epoch milliseconds
+
+  // Escalation context (populated if resolution_type == "escalated")
+  string next_action     = 7;  // e.g., "reschedule_pod" after failed "restart_pod"
+  int32  attempt_number  = 8;  // which retry attempt this was (1-indexed)
+}

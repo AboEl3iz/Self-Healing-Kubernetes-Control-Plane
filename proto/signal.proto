@@ -1,0 +1,21 @@
+syntax = "proto3";
+package selfheal.v1;
+option go_package = "github.com/karim-aboelaiz/selfheal-cp/internal/gen/proto";
+
+// SignalEvent is emitted by the eBPF agent for every kernel-level signal.
+// One event per observation window per metric per pod.
+message SignalEvent {
+  string version      = 1;  // schema version ("1.0")
+  string node         = 2;  // node hostname
+  string pod          = 3;  // pod name (resolved via PID→cgroup→pod mapper)
+  string namespace    = 4;  // Kubernetes namespace
+  string deployment   = 5;  // owner Deployment / StatefulSet name
+  string container    = 6;  // container name within the pod
+  string metric       = 7;  // metric name: "io_wait_high", "oom_kill", etc.
+  double value        = 8;  // observed value (unit depends on metric)
+  string unit         = 9;  // "percent", "nanoseconds", "count", "bytes"
+  int64  duration_ms  = 10; // observation window duration in ms
+  int64  timestamp    = 11; // Unix epoch milliseconds
+  uint64 cgroup_id    = 12; // kernel cgroup ID (source of truth)
+  int32  pid          = 13; // PID of the triggering process (if available)
+}

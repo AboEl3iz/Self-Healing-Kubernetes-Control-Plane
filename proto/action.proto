@@ -1,0 +1,23 @@
+syntax = "proto3";
+package selfheal.v1;
+option go_package = "github.com/karim-aboelaiz/selfheal-cp/internal/gen/proto";
+
+// ActionEvent is emitted by the Kubernetes Controller when a healing action
+// is dispatched. It records what was changed and why.
+message ActionEvent {
+  string action_id        = 1;  // UUID
+  string anomaly_id       = 2;  // UUID of the triggering AnomalyEvent
+  string action           = 3;  // "restart_pod", "patch_resource_limits", etc.
+  string target_kind      = 4;  // "Pod", "Deployment", "Node"
+  string target_name      = 5;  // resource name
+  string target_namespace = 6;  // Kubernetes namespace
+  string reason           = 7;  // human-readable reason string
+  double confidence       = 8;  // confidence from the AnomalyEvent
+  bool   dry_run          = 9;  // if true, no actual changes were made
+  int64  timestamp        = 10; // Unix epoch milliseconds
+
+  // Optional: what changed (for patch actions)
+  string from_value       = 11; // e.g., "512Mi"
+  string to_value         = 12; // e.g., "1Gi"
+  string patch_path       = 13; // e.g., "spec.template.spec.containers[0].resources.limits.memory"
+}
