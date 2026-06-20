@@ -1,0 +1,62 @@
+{{- if .Values.serviceMonitor.enabled }}
+---
+# ServiceMonitor for Prometheus Operator — scrapes all 3 components.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "selfheal-cp.fullname" . }}
+  namespace: {{ default .Release.Namespace .Values.serviceMonitor.namespace }}
+  labels:
+    {{- include "selfheal-cp.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "selfheal-cp.selectorLabels" . | nindent 6 }}
+  endpoints:
+    # Agent metrics (:8080)
+    - port: metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+      path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+    # Analyzer metrics (:8081)
+    - port: metrics-analyzer
+      interval: {{ .Values.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+      path: /metrics
+    # Controller metrics (:8082)
+    - port: metrics-controller
+      interval: {{ .Values.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+      path: /metrics
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
+---
+# Service for analyzer and controller metrics endpoints
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "selfheal-cp.fullname" . }}-metrics
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "selfheal-cp.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "selfheal-cp.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics-analyzer
+      port: {{ .Values.analyzer.metricsPort }}
+      targetPort: {{ .Values.analyzer.metricsPort }}
+      protocol: TCP
+    - name: metrics-controller
+      port: {{ .Values.controller.metricsPort }}
+      targetPort: {{ .Values.controller.metricsPort }}
+      protocol: TCP
+  type: ClusterIP

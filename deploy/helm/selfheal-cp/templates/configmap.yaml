@@ -1,0 +1,28 @@
+---
+# ConfigMap mounts rules.yaml and guardrails.yaml into both analyzer and controller.
+# Override values with .Values.config.rulesYaml / .Values.config.guardrailsYaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "selfheal-cp.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "selfheal-cp.labels" . | nindent 4 }}
+data:
+  {{- if .Values.config.rulesYaml }}
+  rules.yaml: |
+    {{- .Values.config.rulesYaml | nindent 4 }}
+  {{- else }}
+  rules.yaml: |
+    # Rules are loaded from config/rules.yaml at build time.
+    # Override via --set-file config.rulesYaml=config/rules.yaml
+    # or provide the full YAML inline in values.yaml under config.rulesYaml.
+  {{- end }}
+  {{- if .Values.config.guardrailsYaml }}
+  guardrails.yaml: |
+    {{- .Values.config.guardrailsYaml | nindent 4 }}
+  {{- else }}
+  guardrails.yaml: |
+    # Guardrails are loaded from config/guardrails.yaml at build time.
+    # Override via --set-file config.guardrailsYaml=config/guardrails.yaml
+  {{- end }}

@@ -1,0 +1,119 @@
+# Default values for selfheal-cp.
+# Override with: helm install selfheal-cp ./deploy/helm/selfheal-cp -f my-values.yaml
+
+# ─── Global settings ──────────────────────────────────────────────────────────
+global:
+  # imagePullSecrets: []
+  # imageRegistry: ""
+  nats:
+    url: "nats://nats:4222"
+  dryRun: false
+
+# ─── Agent (DaemonSet) ────────────────────────────────────────────────────────
+agent:
+  image:
+    repository: selfheal/agent
+    tag: "phase4"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+  # Poll interval for eBPF maps (milliseconds)
+  pollIntervalMs: 1000
+  # Port for Prometheus /metrics
+  metricsPort: 8080
+  # Extra environment variables
+  env: []
+  # Extra volume mounts
+  extraVolumeMounts: []
+  # Node selector, tolerations
+  nodeSelector: {}
+  tolerations:
+    - operator: Exists   # run on ALL nodes including control-plane taints
+  affinity: {}
+
+# ─── Analyzer (Deployment) ────────────────────────────────────────────────────
+analyzer:
+  image:
+    repository: selfheal/analyzer
+    tag: "phase4"
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "128Mi"
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+  metricsPort: 8081
+  rulesFile: "/etc/selfheal/rules.yaml"
+  env: []
+
+# ─── Controller (Deployment) ──────────────────────────────────────────────────
+controller:
+  image:
+    repository: selfheal/controller
+    tag: "phase4"
+    pullPolicy: IfNotPresent
+  replicaCount: 1   # only 1 active controller to avoid duplicate actions
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+  metricsPort: 8082
+  guardrailsFile: "/etc/selfheal/guardrails.yaml"
+  env: []
+
+# ─── Intelligence (embedded in analyzer or standalone) ────────────────────────
+intelligence:
+  enabled: true
+  # Minimum pods on a node before root cause analysis is triggered
+  minPodsThreshold: 2
+  # Aggregation window (Go duration string)
+  aggregationWindow: "5m"
+  # Flush interval for evaluating node windows
+  flushInterval: "30s"
+
+# ─── NATS (optional subchart, disable if NATS is external) ───────────────────
+nats:
+  # Set to true to deploy NATS JetStream alongside the controller
+  enabled: false
+  # Helm chart values for nats/nats subchart (if enabled)
+  # nats:
+  #   config:
+  #     jetstream:
+  #       enabled: true
+
+# ─── ConfigMaps ───────────────────────────────────────────────────────────────
+config:
+  # Inline or external path to rules.yaml
+  rulesYaml: ""   # if empty, mounts from deploy/k8s/ configmap
+  guardrailsYaml: ""
+
+# ─── RBAC ─────────────────────────────────────────────────────────────────────
+rbac:
+  create: true
+  serviceAccountName: "selfheal-cp"
+
+# ─── ServiceMonitor (Prometheus Operator) ─────────────────────────────────────
+serviceMonitor:
+  enabled: false
+  namespace: ""        # defaults to Release.Namespace
+  interval: "30s"
+  scrapeTimeout: "10s"
+  labels: {}
+
+# ─── Grafana dashboard provisioning ──────────────────────────────────────────
+grafana:
+  # Mount the generated dashboard JSONs as ConfigMaps for auto-provisioning
+  dashboards:
+    enabled: false
+    configMapNamePrefix: "selfheal-grafana"

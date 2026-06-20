@@ -1,0 +1,135 @@
+{{/*
+Analyzer + Controller Deployment.
+Both components subscribe to NATS and use the shared ConfigMap.
+The analyzer handles anomaly detection + intelligence (aggregator + reasoner).
+The controller handles healing actions (reconciler).
+*/}}
+---
+# Analyzer Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "selfheal-cp.fullname" . }}-analyzer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "selfheal-cp.labels" . | nindent 4 }}
+    component: analyzer
+spec:
+  replicas: {{ .Values.analyzer.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "selfheal-cp.selectorLabels" . | nindent 6 }}
+      component: analyzer
+  template:
+    metadata:
+      labels:
+        {{- include "selfheal-cp.selectorLabels" . | nindent 8 }}
+        component: analyzer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.analyzer.metricsPort | quote }}
+        prometheus.io/path: "/metrics"
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Values.rbac.serviceAccountName }}
+      containers:
+        - name: analyzer
+          image: "{{ .Values.analyzer.image.repository }}:{{ .Values.analyzer.image.tag }}"
+          imagePullPolicy: {{ .Values.analyzer.image.pullPolicy }}
+          args:
+            - "--nats-url={{ .Values.global.nats.url }}"
+            - "--rules-file={{ .Values.analyzer.rulesFile }}"
+            - "--metrics-addr=:{{ .Values.analyzer.metricsPort }}"
+            - "--dry-run={{ .Values.global.dryRun }}"
+            - "--log-level=info"
+            {{- if .Values.intelligence.enabled }}
+            - "--intelligence-enabled=true"
+            - "--intelligence-min-pods={{ .Values.intelligence.minPodsThreshold }}"
+            - "--intelligence-window={{ .Values.intelligence.aggregationWindow }}"
+            {{- end }}
+          env:
+            {{- with .Values.analyzer.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.analyzer.metricsPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.analyzer.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/selfheal
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.analyzer.metricsPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "selfheal-cp.fullname" . }}-config
+---
+# Controller Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "selfheal-cp.fullname" . }}-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "selfheal-cp.labels" . | nindent 4 }}
+    component: controller
+spec:
+  replicas: {{ .Values.controller.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "selfheal-cp.selectorLabels" . | nindent 6 }}
+      component: controller
+  template:
+    metadata:
+      labels:
+        {{- include "selfheal-cp.selectorLabels" . | nindent 8 }}
+        component: controller
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.controller.metricsPort | quote }}
+        prometheus.io/path: "/metrics"
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Values.rbac.serviceAccountName }}
+      containers:
+        - name: controller
+          image: "{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}"
+          imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
+          args:
+            - "--nats-url={{ .Values.global.nats.url }}"
+            - "--guardrails-file={{ .Values.controller.guardrailsFile }}"
+            - "--metrics-addr=:{{ .Values.controller.metricsPort }}"
+            - "--dry-run={{ .Values.global.dryRun }}"
+            - "--log-level=info"
+          env:
+            {{- with .Values.controller.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.controller.metricsPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.controller.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/selfheal
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.controller.metricsPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "selfheal-cp.fullname" . }}-config
