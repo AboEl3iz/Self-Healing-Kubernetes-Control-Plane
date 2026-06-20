@@ -1,27 +1,30 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: ebpf-observer
+  name: selfheal-agent
   namespace: kube-system
   labels:
-    app: ebpf-observer
+    app: selfheal-agent
+    component: selfheal-cp
 spec:
   selector:
     matchLabels:
-      app: ebpf-observer
+      app: selfheal-agent
   template:
     metadata:
       labels:
-        app: ebpf-observer
+        app: selfheal-agent
+        component: selfheal-cp
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
 
-      serviceAccountName: ebpf-observer
+      serviceAccountName: selfheal-agent
       hostNetwork: true
       hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
       tolerations:
         # Run on master/control-plane nodes as well
         - effect: NoSchedule
@@ -29,8 +32,8 @@ spec:
         - effect: NoExecute
           operator: Exists
       containers:
-        - name: ebpf-observer
-          image: ebpf-observer:latest
+        - name: selfheal-agent
+          image: selfheal-agent:latest
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
@@ -48,19 +51,14 @@ spec:
                 fieldRef:
                   fieldPath: status.hostIP
           args:
-            - "--cpu-bpf=/app/ebpf/cpu.o"
-            - "--mem-bpf=/app/ebpf/memory.o"
-            - "--io-bpf=/app/ebpf/io.o"
-            - "--net-bpf=/app/ebpf/network.o"
-            - "--sys-bpf=/app/ebpf/syscall.o"
-            - "--lineage-bpf=/app/ebpf/lineage.o"
-            - "--exec-bpf=/app/ebpf/exec.o"
-            - "--dns-bpf=/app/ebpf/dns.o"
-            - "--privesc-bpf=/app/ebpf/privesc.o"
-            - "--escape-bpf=/app/ebpf/escape.o"
-            - "--containers-only"
-            - "--show-security"
+            - "--cpu-bpf=/app/ebpf/probes/cpu.o"
+            - "--mem-bpf=/app/ebpf/probes/memory.o"
+            - "--io-bpf=/app/ebpf/probes/io.o"
+            - "--net-bpf=/app/ebpf/probes/network.o"
+            - "--sys-bpf=/app/ebpf/probes/syscall.o"
             - "--kubernetes"
+            - "--dry-run=false"
+            - "--nats-url=nats://selfheal-nats:4222"
           ports:
             - name: metrics
               containerPort: 8080

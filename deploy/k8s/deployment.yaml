@@ -26,13 +26,14 @@ spec:
       serviceAccountName: selfheal-agent
       containers:
         - name: analyzer
-          image: selfheal-analyzer:latest
-          imagePullPolicy: IfNotPresent
+          image: selfheal-analyzer:v2
+          imagePullPolicy: Never
           args:
             - "--nats-url=nats://selfheal-nats:4222"
             - "--rules-file=/etc/selfheal/rules.yaml"
             - "--metrics-addr=:8081"
             - "--log-level=info"
+            - "--dry-run=false"
           ports:
             - name: metrics
               containerPort: 8081
@@ -93,8 +94,8 @@ spec:
       serviceAccountName: selfheal-agent
       containers:
         - name: controller
-          image: selfheal-controller:latest
-          imagePullPolicy: IfNotPresent
+          image: selfheal-controller:v3
+          imagePullPolicy: Never
           args:
             - "--nats-url=nats://selfheal-nats:4222"
             - "--guardrails-file=/etc/selfheal/guardrails.yaml"
@@ -133,22 +134,3 @@ spec:
           configMap:
             name: selfheal-config
 
----
-# ConfigMap for analyzer + controller configuration
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: selfheal-config
-  namespace: kube-system
-  labels:
-    component: selfheal-cp
-data:
-  # Note: actual file content is injected by kustomize or helm values
-  # Override with: kubectl create configmap selfheal-config \
-  #   --from-file=rules.yaml=config/rules.yaml \
-  #   --from-file=guardrails.yaml=config/guardrails.yaml \
-  #   -n kube-system --dry-run=client -o yaml | kubectl apply -f -
-  rules.yaml: |
-    # Loaded from config/rules.yaml — see Makefile k8s-deploy target
-  guardrails.yaml: |
-    # Loaded from config/guardrails.yaml — see Makefile k8s-deploy target

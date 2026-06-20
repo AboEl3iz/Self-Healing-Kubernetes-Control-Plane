@@ -1,16 +1,53 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ebpf-observer
+  name: selfheal-agent
   namespace: kube-system
   labels:
-    app: ebpf-observer
+    app: selfheal-agent
+    component: selfheal-cp
 spec:
   selector:
-    app: ebpf-observer
+    app: selfheal-agent
   ports:
     - name: metrics
       port: 8080
       targetPort: 8080
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: selfheal-analyzer
+  namespace: kube-system
+  labels:
+    app: selfheal-analyzer
+    component: selfheal-cp
+spec:
+  selector:
+    app: selfheal-analyzer
+  ports:
+    - name: metrics
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: selfheal-controller
+  namespace: kube-system
+  labels:
+    app: selfheal-controller
+    component: selfheal-cp
+spec:
+  selector:
+    app: selfheal-controller
+  ports:
+    - name: metrics
+      port: 8082
+      targetPort: 8082
       protocol: TCP
   type: ClusterIP

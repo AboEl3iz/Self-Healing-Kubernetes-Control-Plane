@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: selfheal-nats
+  namespace: kube-system
+  labels:
+    app: selfheal-nats
+spec:
+  ports:
+    - name: client
+      port: 4222
+      targetPort: 4222
+    - name: monitor
+      port: 8222
+      targetPort: 8222
+  selector:
+    app: selfheal-nats
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selfheal-nats
+  namespace: kube-system
+  labels:
+    app: selfheal-nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: selfheal-nats
+  template:
+    metadata:
+      labels:
+        app: selfheal-nats
+    spec:
+      containers:
+        - name: nats
+          image: nats:2.10-alpine
+          args:
+            - "--jetstream"
+            - "--store_dir=/data"
+            - "--http_port=8222"
+            - "--name=selfheal-dev"
+          ports:
+            - containerPort: 4222
+              name: client
+            - containerPort: 8222
+              name: monitor

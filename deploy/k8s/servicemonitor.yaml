@@ -1,10 +1,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: ebpf-observer
+  name: selfheal-agent
   namespace: monitoring
   labels:
-    app: ebpf-observer
+    app: selfheal-agent
     release: prometheus
 spec:
   # Scraping services in the kube-system namespace
@@ -13,7 +13,7 @@ spec:
       - kube-system
   selector:
     matchLabels:
-      app: ebpf-observer
+      component: selfheal-cp
   endpoints:
     - port: metrics
       interval: 5s
