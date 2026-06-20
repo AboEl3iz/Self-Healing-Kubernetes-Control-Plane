@@ -1,6 +1,6 @@
 module github.com/karim-aboelaiz/selfheal-cp
 
-go 1.26.0
+go 1.23.0
 
 require (
 	// eBPF userspace loader (cilium/ebpf replaces libbpf-go)
