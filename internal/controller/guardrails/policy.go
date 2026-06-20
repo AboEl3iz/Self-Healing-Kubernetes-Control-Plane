@@ -61,9 +61,9 @@ type EscalationStep struct {
 type Policy struct {
 	Guardrails struct {
 		Global struct {
-			MaxActionsPer10s   int  `yaml:"max_actions_per_10s"`
+			MaxActionsPer10s    int  `yaml:"max_actions_per_10s"`
 			MaxActionsPerMinute int  `yaml:"max_actions_per_minute"`
-			DryRun             bool `yaml:"dry_run"`
+			DryRun              bool `yaml:"dry_run"`
 		} `yaml:"global"`
 
 		DryRunMode struct {
@@ -72,12 +72,12 @@ type Policy struct {
 		} `yaml:"dry_run_mode"`
 
 		PerPod struct {
-			MaxRestartsPerHour          int    `yaml:"max_restarts_per_hour"`
-			CooldownAfterRestart        string `yaml:"cooldown_after_restart"`
-			MaxResourcePatchesPerHour   int    `yaml:"max_resource_patches_per_hour"`
-			CooldownAfterResourcePatch  string `yaml:"cooldown_after_resource_patch"`
-			MaxReschedulesPerHour       int    `yaml:"max_reschedules_per_hour"`
-			CooldownAfterReschedule     string `yaml:"cooldown_after_reschedule"`
+			MaxRestartsPerHour         int    `yaml:"max_restarts_per_hour"`
+			CooldownAfterRestart       string `yaml:"cooldown_after_restart"`
+			MaxResourcePatchesPerHour  int    `yaml:"max_resource_patches_per_hour"`
+			CooldownAfterResourcePatch string `yaml:"cooldown_after_resource_patch"`
+			MaxReschedulesPerHour      int    `yaml:"max_reschedules_per_hour"`
+			CooldownAfterReschedule    string `yaml:"cooldown_after_reschedule"`
 		} `yaml:"per_pod"`
 
 		PerNode struct {
@@ -88,9 +88,9 @@ type Policy struct {
 		} `yaml:"per_node"`
 
 		Escalation struct {
-			RestartObservationWindow   string           `yaml:"restart_observation_window"`
-			RescheduleObservationWindow string          `yaml:"reschedule_observation_window"`
-			MaxAutonomousAttempts       int             `yaml:"max_autonomous_attempts"`
+			RestartObservationWindow    string           `yaml:"restart_observation_window"`
+			RescheduleObservationWindow string           `yaml:"reschedule_observation_window"`
+			MaxAutonomousAttempts       int              `yaml:"max_autonomous_attempts"`
 			EscalationPath              []EscalationStep `yaml:"escalation_path"`
 		} `yaml:"escalation"`
 
@@ -209,4 +209,3 @@ func (p *Policy) ObservationWindow(action string) time.Duration {
 		return 90 * time.Second
 	}
 }
-

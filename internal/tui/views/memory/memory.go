@@ -133,9 +133,18 @@ func (v *View) SetData(batch msg.DataBatch) {
 	v.cached = ""
 }
 
-func (v *View) SetSize(w, h int) { v.w, v.h = w, h; v.tbl.SetSize(w, h-2); v.dirty = true; v.cached = "" }
+func (v *View) SetSize(w, h int) {
+	v.w, v.h = w, h
+	v.tbl.SetSize(w, h-2)
+	v.dirty = true
+	v.cached = ""
+}
 func (v *View) SetTheme(th theme.Theme) {
-	v.theme = th; v.tbl.SetTheme(th); v.search.SetTheme(th); v.dirty = true; v.cached = ""
+	v.theme = th
+	v.tbl.SetTheme(th)
+	v.search.SetTheme(th)
+	v.dirty = true
+	v.cached = ""
 }
 func (v *View) Focus() { v.focused = true; v.tbl.Focus() }
 func (v *View) Blur()  { v.focused = false; v.tbl.Blur() }

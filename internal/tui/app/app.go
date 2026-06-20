@@ -26,29 +26,29 @@ import (
 	"github.com/karim-aboelaiz/selfheal-cp/internal/tui/widgets/statusbar"
 	"github.com/karim-aboelaiz/selfheal-cp/internal/tui/widgets/tabbar"
 
-	cpuView     "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/cpu"
-	detailView  "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/detail"
-	eventsView  "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/events"
-	graphsView  "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/graphs"
-	ioView      "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/io"
-	memView     "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/memory"
-	netView     "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/network"
-	overView    "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/overview"
-	procgView   "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/procgraph"
-	sysView     "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/syscall"
+	cpuView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/cpu"
+	detailView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/detail"
+	eventsView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/events"
+	graphsView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/graphs"
+	ioView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/io"
+	memView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/memory"
+	netView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/network"
+	overView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/overview"
+	procgView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/procgraph"
+	sysView "github.com/karim-aboelaiz/selfheal-cp/internal/tui/views/syscall"
 )
 
 // Tab indices.
 const (
-	tabOverview   = 0
-	tabCPU        = 1
-	tabMemory     = 2
-	tabIO         = 3
-	tabNetwork    = 4
-	tabSyscall    = 5
-	tabEvents     = 6
-	tabGraphs     = 7
-	tabProcGraph  = 8
+	tabOverview  = 0
+	tabCPU       = 1
+	tabMemory    = 2
+	tabIO        = 3
+	tabNetwork   = 4
+	tabSyscall   = 5
+	tabEvents    = 6
+	tabGraphs    = 7
+	tabProcGraph = 8
 )
 
 // App is the root BubbleTea model.
@@ -60,8 +60,8 @@ type App struct {
 	layout layout.Layout
 
 	// Theme
-	theme     theme.Theme
-	themeIdx  int
+	theme    theme.Theme
+	themeIdx int
 
 	// Chrome widgets
 	tabs      tabbar.Model
@@ -72,13 +72,13 @@ type App struct {
 	palette palette.Model
 
 	// Tab views (indices match tab* constants above)
-	tabViews  []views.View
-	detailPg  *detailView.View
+	tabViews []views.View
+	detailPg *detailView.View
 
 	// Config + collectors
-	cfg     config.Config
-	colls   *CollectorSet
-	demo    bool
+	cfg   config.Config
+	colls *CollectorSet
+	demo  bool
 
 	// Render dimensions
 	termW, termH int
@@ -93,14 +93,14 @@ func New(cfg config.Config, colls *CollectorSet, demo bool) *App {
 	th := theme.Get(cfg.Theme)
 
 	tabs := tabbar.New([]tabbar.Tab{
-		{Title: "Overview",  Key: "1"},
-		{Title: "CPU",       Key: "2"},
-		{Title: "Memory",    Key: "3"},
-		{Title: "I/O",       Key: "4"},
-		{Title: "Network",   Key: "5"},
-		{Title: "Syscall",   Key: "6"},
-		{Title: "Events",    Key: "7"},
-		{Title: "Graphs",    Key: "8"},
+		{Title: "Overview", Key: "1"},
+		{Title: "CPU", Key: "2"},
+		{Title: "Memory", Key: "3"},
+		{Title: "I/O", Key: "4"},
+		{Title: "Network", Key: "5"},
+		{Title: "Syscall", Key: "6"},
+		{Title: "Events", Key: "7"},
+		{Title: "Graphs", Key: "8"},
 		{Title: "ProcGraph", Key: "9"},
 	}, th)
 
@@ -304,7 +304,7 @@ func (a App) handleKey(m tea.KeyMsg) (tea.Model, tea.Cmd) {
 		a.activeView().Focus()
 		return a, nil
 	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
-		idx := int(key[0]-'1')
+		idx := int(key[0] - '1')
 		if idx < len(a.tabViews) {
 			a.blurAll()
 			a.tabs.SetActive(idx)

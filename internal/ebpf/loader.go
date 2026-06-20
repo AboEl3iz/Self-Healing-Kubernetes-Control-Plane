@@ -96,9 +96,9 @@ func ServeMetrics(addr string, logger *slog.Logger) {
 // NewLoader creates a new eBPF probe loader.
 func NewLoader(cfg ProbeConfig, mapper *Mapper, logger *slog.Logger) *Loader {
 	return &Loader{
-		cfg:       cfg,
-		mapper:    mapper,
-		logger:    logger,
+		cfg:          cfg,
+		mapper:       mapper,
+		logger:       logger,
 		signalsTotal: agentSignalsTotal,
 	}
 }
@@ -669,4 +669,3 @@ func (p *LoadedProbes) Close() {
 		p.logger.Info("eBPF probes detached and closed")
 	}
 }
-

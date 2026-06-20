@@ -40,14 +40,14 @@ type Row interface{}
 
 // Model is the VirtualTable widget state.
 type Model struct {
-	columns []Column
-	rows    []Row    // full data set
-	visible []int    // indices into rows after filtering
-	cursor  int      // index in visible[]
-	offset  int      // first visible row index in visible[]
-	sortCol int      // column index; -1 = unsorted
-	sortAsc bool
-	filter  string
+	columns  []Column
+	rows     []Row // full data set
+	visible  []int // indices into rows after filtering
+	cursor   int   // index in visible[]
+	offset   int   // first visible row index in visible[]
+	sortCol  int   // column index; -1 = unsorted
+	sortAsc  bool
+	filter   string
 	filterFn func(r Row, q string) bool
 
 	width, height int
@@ -193,7 +193,7 @@ func (m Model) View() string {
 		indicator := m.theme.TableDim.Render(
 			strings.Repeat("─", m.width-8) +
 				lipgloss.NewStyle().Foreground(m.theme.FgDim).Render(
-					" " + itoa(pct) + "% ",
+					" "+itoa(pct)+"% ",
 				),
 		)
 		sb.WriteString(indicator)

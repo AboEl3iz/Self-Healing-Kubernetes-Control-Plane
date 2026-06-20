@@ -131,9 +131,9 @@ func (m Model) View(termW, termH int) string {
 			name, desc,
 		)
 		if i == m.cursor {
-			sb.WriteString(m.theme.TableSelected.Width(boxW-4).Render(line))
+			sb.WriteString(m.theme.TableSelected.Width(boxW - 4).Render(line))
 		} else {
-			sb.WriteString(m.theme.TableRow.Width(boxW-4).Render(line))
+			sb.WriteString(m.theme.TableRow.Width(boxW - 4).Render(line))
 		}
 		sb.WriteByte('\n')
 	}

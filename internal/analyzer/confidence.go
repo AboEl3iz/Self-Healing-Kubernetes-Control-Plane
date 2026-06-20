@@ -20,7 +20,7 @@ type ScoreInput struct {
 	BaseConfidence      float64  // from the triggered rule
 	ActiveSignals       []string // list of signal names contributing
 	Correlations        []Correlation
-	SingleSignalPenalty float64  // from rules config (default -0.20)
+	SingleSignalPenalty float64 // from rules config (default -0.20)
 }
 
 // Thresholds defines the confidence decision boundaries.

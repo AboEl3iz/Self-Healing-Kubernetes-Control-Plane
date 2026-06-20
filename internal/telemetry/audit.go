@@ -27,15 +27,15 @@ import (
 
 // AuditEntry represents a single audit record.
 type AuditEntry struct {
-	ActionID    string  // UUID of the ActionEvent
-	AnomalyID   string  // UUID of the AnomalyEvent
-	Action      string  // "restart_pod", "patch_resource_limits", etc.
-	Target      string  // resource name (pod or node)
+	ActionID    string // UUID of the ActionEvent
+	AnomalyID   string // UUID of the AnomalyEvent
+	Action      string // "restart_pod", "patch_resource_limits", etc.
+	Target      string // resource name (pod or node)
 	Namespace   string
-	Reason      string  // human-readable cause
+	Reason      string // human-readable cause
 	Confidence  float64
 	DryRun      bool
-	OutcomeType string  // "resolved", "escalated", "failed" — filled by observer
+	OutcomeType string // "resolved", "escalated", "failed" — filled by observer
 }
 
 // AuditLog writes audit entries to Kubernetes Events API and structured logs.
@@ -115,4 +115,3 @@ func (a *AuditLog) RecordAction(ctx context.Context, entry AuditEntry) error {
 	}
 	return nil
 }
-

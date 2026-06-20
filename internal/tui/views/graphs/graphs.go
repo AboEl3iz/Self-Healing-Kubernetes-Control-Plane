@@ -4,7 +4,8 @@
 // Memory contract: capped at maxContainers entries.  Each entry owns 5
 // sparklines with a 120-sample ring buffer (float64 = 8 B each), so the
 // absolute worst-case resident size is:
-//   50 containers × 5 sparklines × 120 samples × 8 B = 240 KB
+//
+//	50 containers × 5 sparklines × 120 samples × 8 B = 240 KB
 //
 // Data arrives via SetData which is called on every DataMsg; no goroutines
 // are spawned here — the view is purely reactive.
@@ -133,8 +134,8 @@ func (v *View) SetTheme(th theme.Theme) {
 	v.cached = ""
 }
 
-func (v *View) Focus()  { v.focused = true }
-func (v *View) Blur()   { v.focused = false }
+func (v *View) Focus() { v.focused = true }
+func (v *View) Blur()  { v.focused = false }
 
 func (v *View) StatusLine() string {
 	return fmt.Sprintf("Graphs [%d containers]  ·  ↑↓ scroll  ·  g top  ·  G bottom", len(v.graphs))
@@ -207,11 +208,11 @@ func (v *View) getOrCreate(name string) *containerGraphs {
 	th := v.theme
 	v.seq++
 	g := &containerGraphs{
-		cpu:    sparkline.New("CPU  ", "s",     string(th.Green),  sparkW, th),
-		mem:    sparkline.New("MEM  ", "MB",    string(th.Blue),   sparkW, th),
-		ioRead: sparkline.New("READ ", "KB/s",  string(th.Cyan),   sparkW, th),
-		ioWrt:  sparkline.New("WRITE", "KB/s",  string(th.Orange), sparkW, th),
-		net:    sparkline.New("NET  ", "flows", string(th.Magenta),sparkW, th),
+		cpu:    sparkline.New("CPU  ", "s", string(th.Green), sparkW, th),
+		mem:    sparkline.New("MEM  ", "MB", string(th.Blue), sparkW, th),
+		ioRead: sparkline.New("READ ", "KB/s", string(th.Cyan), sparkW, th),
+		ioWrt:  sparkline.New("WRITE", "KB/s", string(th.Orange), sparkW, th),
+		net:    sparkline.New("NET  ", "flows", string(th.Magenta), sparkW, th),
 		seq:    v.seq,
 	}
 	v.graphs[name] = g

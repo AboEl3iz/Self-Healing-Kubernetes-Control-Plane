@@ -2,13 +2,14 @@
 // single-container detail page opened with Enter from any table view.
 //
 // Sections:
-//   A. Header       — name, runtime, uptime, state
-//   B. Resources    — current CPU/Mem/IO/Net numbers
-//   C. Live Graphs  — 5 sparklines (CPU, Mem, I/O read, I/O write, syscall lat)
-//   D. Network      — TCP flows, retransmits
-//   E. Syscalls     — top syscalls with failure rates
-//   F. Event Timeline — filterable chronological stream
-//   G. Actions      — p pause, y yank, e export
+//
+//	A. Header       — name, runtime, uptime, state
+//	B. Resources    — current CPU/Mem/IO/Net numbers
+//	C. Live Graphs  — 5 sparklines (CPU, Mem, I/O read, I/O write, syscall lat)
+//	D. Network      — TCP flows, retransmits
+//	E. Syscalls     — top syscalls with failure rates
+//	F. Event Timeline — filterable chronological stream
+//	G. Actions      — p pause, y yank, e export
 package detail
 
 import (
@@ -16,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/karim-aboelaiz/selfheal-cp/internal/tui/msg"
@@ -107,7 +108,8 @@ func (v *View) SetContainer(name string) {
 		sysLat: sparkline.New("SYSLAT", "ms", string(th.Yellow), sparkW, v.theme),
 	}
 	v.events = nil
-	v.dirty = true; v.cached = ""
+	v.dirty = true
+	v.cached = ""
 }
 
 var th theme.Theme // package-level copy set on each SetTheme call
@@ -150,27 +152,33 @@ func (v *View) SetData(batch msg.DataBatch) {
 	if len(v.events) > 500 {
 		v.events = v.events[len(v.events)-500:]
 	}
-	v.dirty = true; v.cached = ""
+	v.dirty = true
+	v.cached = ""
 }
 
 func (v *View) SetSize(w, h int) {
 	v.w, v.h = w, h
 	v.vp.Width = w
 	v.vp.Height = h - 2
-	v.dirty = true; v.cached = ""
+	v.dirty = true
+	v.cached = ""
 }
 
 func (v *View) SetTheme(t theme.Theme) {
-	v.theme = t; th = t
+	v.theme = t
+	th = t
 	v.badges = buildDetailBadges(t)
 	v.search.SetTheme(t)
-	v.dirty = true; v.cached = ""
+	v.dirty = true
+	v.cached = ""
 }
-func (v *View) Focus()                 {}
-func (v *View) Blur()                  {}
+func (v *View) Focus() {}
+func (v *View) Blur()  {}
 func (v *View) StatusLine() string {
 	pause := ""
-	if v.paused { pause = "  PAUSED" }
+	if v.paused {
+		pause = "  PAUSED"
+	}
 	return fmt.Sprintf("Detail: %s%s  ·  Esc back  ·  p pause  ·  / filter  ·  ↑↓ scroll", trunc(v.container, 30), pause)
 }
 func (v *View) SelectedContainer() string { return "" }
@@ -181,21 +189,31 @@ func (v *View) Update(tmsg tea.Msg) (views.View, tea.Cmd) {
 		if v.search.Visible() {
 			switch msg.String() {
 			case "esc":
-				v.search.Hide(); v.search.Reset(); v.filter = ""
-				v.dirty = true; return v, nil
+				v.search.Hide()
+				v.search.Reset()
+				v.filter = ""
+				v.dirty = true
+				return v, nil
 			case "enter":
-				v.search.Hide(); v.dirty = true; return v, nil
+				v.search.Hide()
+				v.dirty = true
+				return v, nil
 			}
-			var cmd tea.Cmd; v.search, cmd = v.search.Update(tmsg)
-			v.filter = v.search.Value(); v.dirty = true; return v, cmd
+			var cmd tea.Cmd
+			v.search, cmd = v.search.Update(tmsg)
+			v.filter = v.search.Value()
+			v.dirty = true
+			return v, cmd
 		}
 		switch msg.String() {
 		case "p":
-			v.paused = !v.paused; v.dirty = true
+			v.paused = !v.paused
+			v.dirty = true
 		case "y":
 			// TODO: copy container name to clipboard
 		case "/":
-			v.search.Show(); v.dirty = true
+			v.search.Show()
+			v.dirty = true
 		case "g":
 			v.vp.GotoTop()
 		case "G":
@@ -211,12 +229,15 @@ func (v *View) Update(tmsg tea.Msg) (views.View, tea.Cmd) {
 		}
 		v.dirty = true
 	}
-	var cmd tea.Cmd; v.vp, cmd = v.vp.Update(tmsg)
+	var cmd tea.Cmd
+	v.vp, cmd = v.vp.Update(tmsg)
 	return v, cmd
 }
 
 func (v *View) View() string {
-	if !v.dirty && v.cached != "" { return v.cached }
+	if !v.dirty && v.cached != "" {
+		return v.cached
+	}
 	v.vp.SetContent(v.buildContent())
 	title := v.theme.PanelTitle.Render("  ◉ Container Cockpit: " + trunc(v.container, 40))
 	v.cached = title + "\n" + v.vp.View()
@@ -273,12 +294,16 @@ func (v *View) renderResources() string {
 	b := v.lastBatch
 	var sb strings.Builder
 	for _, s := range b.CPU {
-		if s.ContainerName != v.container { continue }
+		if s.ContainerName != v.container {
+			continue
+		}
 		sb.WriteString(fmt.Sprintf("  CPU: %.4f s/Δt   Threads: %d   RunQ: %.3f ms   CtxSw: %.0f/s\n",
 			s.CPUSeconds, s.ThreadCount, s.RunqLatencySeconds*1000, s.CtxSwitchesPerSec))
 	}
 	for _, s := range b.Mem {
-		if s.ContainerName != v.container { continue }
+		if s.ContainerName != v.container {
+			continue
+		}
 		lim := "unlimited"
 		if s.MemoryLimitBytes > 0 {
 			lim = fmt.Sprintf("%.1f MB", float64(s.MemoryLimitBytes)/1024/1024)
@@ -287,8 +312,10 @@ func (v *View) renderResources() string {
 			float64(s.MemoryBytes)/1024/1024, lim, s.FaultsPerSec))
 	}
 	for _, s := range b.IO {
-		if s.ContainerName != v.container { continue }
-		
+		if s.ContainerName != v.container {
+			continue
+		}
+
 		rKey := fmt.Sprintf("%s:io_read", s.ContainerName)
 		wKey := fmt.Sprintf("%s:io_write", s.ContainerName)
 		rSnaps := b.Percentiles[rKey].W60s
@@ -308,7 +335,9 @@ func (v *View) renderNetwork() string {
 	b := v.lastBatch
 	var sb strings.Builder
 	for _, s := range b.Net {
-		if s.ContainerName != v.container { continue }
+		if s.ContainerName != v.container {
+			continue
+		}
 		sb.WriteString(fmt.Sprintf("  Flows: %d   Established: %d   TimeWait: %d   CloseWait: %d   Retransmits: %d\n",
 			s.ActiveFlows, s.Established, s.TimeWait, s.CloseWait, s.TotalRetransmits))
 	}
@@ -324,7 +353,9 @@ func (v *View) renderSyscalls() string {
 	sb.WriteString(v.theme.TableHeader.Render(
 		fmt.Sprintf("  %-4s  %-16s  %8s  %8s  %7s  %7s  %7s\n", "Rank", "Syscall", "Count", "Fail", "p50", "p95", "Max")))
 	for _, s := range b.Sys {
-		if s.ContainerName != v.container { continue }
+		if s.ContainerName != v.container {
+			continue
+		}
 		key := fmt.Sprintf("%s:sys_%d", s.ContainerName, s.SyscallID)
 		snaps := b.Percentiles[key].W60s
 
@@ -459,7 +490,10 @@ func trunc(s string, n int) string {
 	for _, pfx := range []string{"docker:", "cri:", "systemd:", "cgroup:", "host:"} {
 		s = strings.TrimPrefix(s, pfx)
 	}
-	runes := []rune(s); if len(runes) <= n { return s }
+	runes := []rune(s)
+	if len(runes) <= n {
+		return s
+	}
 	return string(runes[:n-1]) + "…"
 }
 

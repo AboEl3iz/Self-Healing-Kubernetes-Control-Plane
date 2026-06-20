@@ -48,7 +48,7 @@ const (
 
 // ResourceNode represents a single vertex in the dependency graph.
 type ResourceNode struct {
-	ID        string            // unique: kind/namespace/name (or kind/name for cluster-scoped)
+	ID        string // unique: kind/namespace/name (or kind/name for cluster-scoped)
 	Kind      ResourceKind
 	Name      string
 	Namespace string
@@ -65,17 +65,17 @@ func resourceID(kind ResourceKind, namespace, name string) string {
 
 // Edge represents a directed relationship between two resources.
 type Edge struct {
-	From     string       // ResourceNode.ID
-	To       string       // ResourceNode.ID
+	From     string // ResourceNode.ID
+	To       string // ResourceNode.ID
 	Relation EdgeRelation
 }
 
 // DependencyGraph holds the full resource dependency graph.
 // All exported methods are safe for concurrent use.
 type DependencyGraph struct {
-	mu       sync.RWMutex
-	nodes    map[string]*ResourceNode // id → node
-	edges    []Edge
+	mu    sync.RWMutex
+	nodes map[string]*ResourceNode // id → node
+	edges []Edge
 	// pod → node reverse index (fast lookup for aggregator)
 	podToNode map[string]string // podID → nodeID
 	// node → pod set

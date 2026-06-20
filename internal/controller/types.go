@@ -18,7 +18,7 @@ import "time"
 // Controller. It carries full context for the healing decision.
 type AnomalyEvent struct {
 	AnomalyID       string   `json:"id"`
-	Type            string   `json:"metric"`             // "high_io_wait", "memory_pressure", …
+	Type            string   `json:"metric"` // "high_io_wait", "memory_pressure", …
 	Confidence      float64  `json:"confidence"`
 	AffectedPod     string   `json:"pod"`
 	AffectedNode    string   `json:"node"`
@@ -27,7 +27,7 @@ type AnomalyEvent struct {
 	Signals         []string `json:"active_signals"`
 	SuggestedCause  string   `json:"suggested_cause"`
 	SuggestedAction string   `json:"suggested_action"`
-	Timestamp       int64    `json:"timestamp"`        // Unix ms
+	Timestamp       int64    `json:"timestamp"` // Unix ms
 	TTLS            int      `json:"ttl_s"`
 }
 
@@ -38,8 +38,8 @@ type AnomalyEvent struct {
 type ActionEvent struct {
 	ActionID        string            `json:"action_id"`
 	AnomalyID       string            `json:"anomaly_id"`
-	Action          string            `json:"action"`          // "restart_pod", "patch_resource_limits", …
-	TargetKind      string            `json:"target_kind"`     // "Pod", "Deployment", "Node"
+	Action          string            `json:"action"`      // "restart_pod", "patch_resource_limits", …
+	TargetKind      string            `json:"target_kind"` // "Pod", "Deployment", "Node"
 	TargetName      string            `json:"target_name"`
 	TargetNamespace string            `json:"target_namespace"`
 	TargetNode      string            `json:"target_node,omitempty"`
@@ -49,20 +49,20 @@ type ActionEvent struct {
 	Reason          string            `json:"reason"`
 	Confidence      float64           `json:"confidence"`
 	DryRun          bool              `json:"dry_run"`
-	Attempt         int               `json:"attempt"`         // escalation attempt number
-	Timestamp       int64             `json:"timestamp"`       // Unix ms
+	Attempt         int               `json:"attempt"`   // escalation attempt number
+	Timestamp       int64             `json:"timestamp"` // Unix ms
 }
 
 // OutcomeEvent is published to selfheal.outcomes.<namespace> after the
 // observation window elapses and the target's health is re-evaluated.
 type OutcomeEvent struct {
-	ActionID       string        `json:"action_id"`
-	AnomalyID      string        `json:"anomaly_id"`
-	Resolved       bool          `json:"resolved"`
-	ResolutionType string        `json:"resolution_type"` // "immediate", "escalated", "failed"
-	ResolutionMs   int64         `json:"resolution_ms"`
-	ObservedAt     time.Time     `json:"observed_at"`
-	Timestamp      int64         `json:"timestamp"` // Unix ms
+	ActionID       string    `json:"action_id"`
+	AnomalyID      string    `json:"anomaly_id"`
+	Resolved       bool      `json:"resolved"`
+	ResolutionType string    `json:"resolution_type"` // "immediate", "escalated", "failed"
+	ResolutionMs   int64     `json:"resolution_ms"`
+	ObservedAt     time.Time `json:"observed_at"`
+	Timestamp      int64     `json:"timestamp"` // Unix ms
 }
 
 // ─── Internal ─────────────────────────────────────────────────────────────────
@@ -71,11 +71,11 @@ type OutcomeEvent struct {
 type ActionType string
 
 const (
-	ActionRestartPod        ActionType = "restart_pod"
-	ActionPatchLimits       ActionType = "patch_resource_limits"
-	ActionReschedulePod     ActionType = "reschedule_pod"
-	ActionCordonNode        ActionType = "cordon_node"
-	ActionManual            ActionType = "manual" // terminal: page on-call
+	ActionRestartPod    ActionType = "restart_pod"
+	ActionPatchLimits   ActionType = "patch_resource_limits"
+	ActionReschedulePod ActionType = "reschedule_pod"
+	ActionCordonNode    ActionType = "cordon_node"
+	ActionManual        ActionType = "manual" // terminal: page on-call
 )
 
 // EscalationState tracks where a (pod, anomalyType) tuple is in the

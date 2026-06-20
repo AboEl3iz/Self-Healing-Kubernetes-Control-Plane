@@ -14,7 +14,6 @@ import (
 	"github.com/karim-aboelaiz/selfheal-cp/internal/tui/views"
 	"github.com/karim-aboelaiz/selfheal-cp/internal/tui/widgets/searchbar"
 	"github.com/karim-aboelaiz/selfheal-cp/internal/tui/widgets/table"
-	
 )
 
 // row is the typed row used by this view's VirtualTable.
@@ -30,12 +29,12 @@ type row struct {
 
 // View implements views.View for the CPU tab.
 type View struct {
-	tbl    table.Model
-	search searchbar.Model
-	theme  theme.Theme
-	w, h   int
-	dirty  bool
-	cached string
+	tbl     table.Model
+	search  searchbar.Model
+	theme   theme.Theme
+	w, h    int
+	dirty   bool
+	cached  string
 	focused bool
 }
 

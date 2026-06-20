@@ -32,7 +32,7 @@ type Publisher struct {
 
 // PublisherConfig holds NATS connection and topic configuration.
 type PublisherConfig struct {
-	NATSUrl    string // e.g., "nats://localhost:4222"
+	NATSUrl string // e.g., "nats://localhost:4222"
 }
 
 // NewPublisher creates a new bus Publisher.
@@ -40,7 +40,7 @@ func NewPublisher(cfg PublisherConfig, logger *slog.Logger) (*Publisher, error) 
 	nc, err := nats.Connect(cfg.NATSUrl,
 		nats.Name("selfheal-publisher"),
 		nats.RetryOnFailedConnect(true),
-		nats.MaxReconnects(-1),        // retry forever
+		nats.MaxReconnects(-1), // retry forever
 		nats.ReconnectWait(2*time.Second),
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
 			if err != nil {

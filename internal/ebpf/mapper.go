@@ -41,8 +41,8 @@ import (
 type PodInfo struct {
 	PodName    string
 	Namespace  string
-	Deployment string    // owner Deployment or StatefulSet (may be empty)
-	Container  string    // container name within the pod
+	Deployment string // owner Deployment or StatefulSet (may be empty)
+	Container  string // container name within the pod
 	NodeName   string
 	CachedAt   time.Time // for TTL eviction
 }
@@ -318,4 +318,3 @@ func normaliseContainerID(raw string) string {
 	// Already bare or unknown format — no container ID extractable.
 	return ""
 }
-

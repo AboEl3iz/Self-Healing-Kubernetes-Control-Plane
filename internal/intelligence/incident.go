@@ -28,11 +28,11 @@ import (
 type RootCause string
 
 const (
-	RootCauseDegradedDisk      RootCause = "degraded_disk"
-	RootCauseNetworkPartition  RootCause = "network_partition"
-	RootCauseCPUStarvation     RootCause = "cpu_starvation"
-	RootCauseMemoryPressure    RootCause = "memory_pressure"
-	RootCauseUnknown           RootCause = "unknown"
+	RootCauseDegradedDisk     RootCause = "degraded_disk"
+	RootCauseNetworkPartition RootCause = "network_partition"
+	RootCauseCPUStarvation    RootCause = "cpu_starvation"
+	RootCauseMemoryPressure   RootCause = "memory_pressure"
+	RootCauseUnknown          RootCause = "unknown"
 )
 
 // ─── PodRef ───────────────────────────────────────────────────────────────────
@@ -50,17 +50,17 @@ type PodRef struct {
 // IncidentEvent is published when the Reasoner determines that multiple pods on
 // the same node share a common root cause.
 type IncidentEvent struct {
-	IncidentID      string            `json:"incident_id"`
-	RootCause       RootCause         `json:"root_cause"`
-	RootCauseConf   float64           `json:"root_cause_confidence"` // 0.0–1.0
-	AffectedNode    string            `json:"affected_node"`
-	AffectedPods    []PodRef          `json:"affected_pods"`
-	SignalSummary   map[string]int    `json:"signal_summary"` // signal → count
-	SharedVolumes   []string          `json:"shared_volumes,omitempty"`
-	SuggestedAction string            `json:"suggested_action"`
-	Namespace       string            `json:"namespace"`
-	DetectedAt      time.Time         `json:"detected_at"`
-	Timestamp       int64             `json:"timestamp"` // Unix ms
+	IncidentID      string         `json:"incident_id"`
+	RootCause       RootCause      `json:"root_cause"`
+	RootCauseConf   float64        `json:"root_cause_confidence"` // 0.0–1.0
+	AffectedNode    string         `json:"affected_node"`
+	AffectedPods    []PodRef       `json:"affected_pods"`
+	SignalSummary   map[string]int `json:"signal_summary"` // signal → count
+	SharedVolumes   []string       `json:"shared_volumes,omitempty"`
+	SuggestedAction string         `json:"suggested_action"`
+	Namespace       string         `json:"namespace"`
+	DetectedAt      time.Time      `json:"detected_at"`
+	Timestamp       int64          `json:"timestamp"` // Unix ms
 }
 
 // ─── NodeIncident (internal) ──────────────────────────────────────────────────

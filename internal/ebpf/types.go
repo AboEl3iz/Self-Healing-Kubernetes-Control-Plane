@@ -33,11 +33,11 @@ type CpuStats struct {
 
 // OomEvent mirrors struct oom_event from memory.c (ring buffer).
 type OomEvent struct {
-	CgroupID   uint64
-	VictimPID  uint32
+	CgroupID    uint64
+	VictimPID   uint32
 	OomScoreAdj uint32
-	Pages      uint64
-	Comm       [16]byte
+	Pages       uint64
+	Comm        [16]byte
 }
 
 // PfStats mirrors struct pf_stats from memory.c (page_fault_map).

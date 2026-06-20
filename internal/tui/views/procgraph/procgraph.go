@@ -1,9 +1,10 @@
 // Package procgraph — Process Graph TUI (tab 9).
 //
 // Three panels:
-//   Left   – Container list
-//   Middle – Process tree (PPID-based, cross-cgroup, with box-drawing chars)
-//   Right  – Node detail + ancestry breadcrumb + event ring
+//
+//	Left   – Container list
+//	Middle – Process tree (PPID-based, cross-cgroup, with box-drawing chars)
+//	Right  – Node detail + ancestry breadcrumb + event ring
 package procgraph
 
 import (
@@ -62,12 +63,12 @@ func New(th theme.Theme) *View {
 
 // ─── views.View interface ─────────────────────────────────────────────────────
 
-func (v *View) Init() tea.Cmd                { return nil }
-func (v *View) Focus()                       { v.focused = true }
-func (v *View) Blur()                        { v.focused = false }
-func (v *View) SelectedContainer() string    { return "" }
-func (v *View) SetTheme(th theme.Theme)      { v.theme = th; v.invalidate() }
-func (v *View) SetSize(w, h int)             { v.w, v.h = w, h; v.rebuildTree(); v.invalidate() }
+func (v *View) Init() tea.Cmd             { return nil }
+func (v *View) Focus()                    { v.focused = true }
+func (v *View) Blur()                     { v.focused = false }
+func (v *View) SelectedContainer() string { return "" }
+func (v *View) SetTheme(th theme.Theme)   { v.theme = th; v.invalidate() }
+func (v *View) SetSize(w, h int)          { v.w, v.h = w, h; v.rebuildTree(); v.invalidate() }
 
 func (v *View) StatusLine() string {
 	nodes := 0
@@ -215,7 +216,10 @@ func (v *View) rebuildTree() {
 	// ── 1. Global pid→node across ALL cgroups ────────────────────────────────
 	// We use (CgroupID,PID) as the unique key but also index by PID alone
 	// within the same cgroup for PPID lookup.
-	type cgPID struct{ cg uint64; pid uint32 }
+	type cgPID struct {
+		cg  uint64
+		pid uint32
+	}
 	allNodes := make(map[cgPID]*graph.SnapshotNode, len(v.snap.Nodes))
 	for k, n := range v.snap.Nodes {
 		allNodes[cgPID{k.CgroupID, k.PID}] = n
@@ -390,18 +394,18 @@ func (v *View) render() string {
 	}
 
 	// Column widths
-	cgW   := 40
-	detW  := 34
+	cgW := 40
+	detW := 34
 	treeW := v.w - cgW - detW - 2 // 2 separators
 	if treeW < 24 {
 		treeW = 24
 	}
 
-	left   := v.renderContainerPanel(cgW, bodyH)
+	left := v.renderContainerPanel(cgW, bodyH)
 	middle := v.renderTreePanel(treeW, bodyH)
-	right  := v.renderDetailPanel(detW, bodyH)
+	right := v.renderDetailPanel(detW, bodyH)
 
-	sep  := th.Separator.Render("│")
+	sep := th.Separator.Render("│")
 	body := lipgloss.JoinHorizontal(lipgloss.Top, left, sep, middle, sep, right)
 	return lipgloss.JoinVertical(lipgloss.Left, title, body)
 }

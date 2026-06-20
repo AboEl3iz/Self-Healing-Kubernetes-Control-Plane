@@ -36,7 +36,7 @@ import (
 // is detected with sufficient confidence.
 type AnomalyEvent struct {
 	Version         string    `json:"version"`
-	ID              string    `json:"id"`           // rule ID
+	ID              string    `json:"id"` // rule ID
 	Namespace       string    `json:"namespace"`
 	Pod             string    `json:"pod"`
 	Deployment      string    `json:"deployment"`
@@ -120,13 +120,13 @@ func NewEngine(rules []Rule, cfg *RulesConfig, publisher AnomalyPublisher, dryRu
 		TakeAction: cfg.Thresholds.TakeAction,
 	}
 	return &Engine{
-		rules:     rules,
-		cfg:       cfg,
-		windows:   NewWindowStore(),
-		cooldowns: NewCooldownStore(),
-		publisher: publisher,
-		dryRun:    dryRun,
-		logger:    logger,
+		rules:      rules,
+		cfg:        cfg,
+		windows:    NewWindowStore(),
+		cooldowns:  NewCooldownStore(),
+		publisher:  publisher,
+		dryRun:     dryRun,
+		logger:     logger,
 		thresholds: t,
 	}
 }

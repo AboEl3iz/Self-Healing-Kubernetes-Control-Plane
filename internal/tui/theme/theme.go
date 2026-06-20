@@ -69,9 +69,9 @@ type Theme struct {
 	TableDim      lipgloss.Style
 
 	// Borders / panels
-	PanelBorder   lipgloss.Style
-	PanelTitle    lipgloss.Style
-	PanelFocused  lipgloss.Style
+	PanelBorder  lipgloss.Style
+	PanelTitle   lipgloss.Style
+	PanelFocused lipgloss.Style
 
 	// Overlays
 	ModalBox   lipgloss.Style

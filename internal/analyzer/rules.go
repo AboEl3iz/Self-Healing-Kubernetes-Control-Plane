@@ -18,11 +18,11 @@ import (
 type Operator string
 
 const (
-	OpGreaterThan        Operator = ">"
-	OpGreaterOrEqual     Operator = ">="
-	OpLessThan           Operator = "<"
-	OpLessOrEqual        Operator = "<="
-	OpEqual              Operator = "=="
+	OpGreaterThan    Operator = ">"
+	OpGreaterOrEqual Operator = ">="
+	OpLessThan       Operator = "<"
+	OpLessOrEqual    Operator = "<="
+	OpEqual          Operator = "=="
 )
 
 // Condition defines a threshold condition for a single metric.
@@ -33,31 +33,31 @@ type Condition struct {
 
 // Rule represents a single detection rule from rules.yaml.
 type Rule struct {
-	ID               string    `yaml:"id"`
-	Description      string    `yaml:"description"`
-	Metric           string    `yaml:"metric"`
-	Condition        Condition `yaml:"condition"`
-	Window           string    `yaml:"window"`           // e.g., "30s", "5m"
-	ConfidenceBase   float64   `yaml:"confidence_base"`
-	MinSignals       int       `yaml:"min_signals"`
-	SuggestedCause   string    `yaml:"suggested_cause"`
-	SuggestedAction  string    `yaml:"suggested_action"`
-	Enabled          bool      `yaml:"enabled"`
+	ID              string    `yaml:"id"`
+	Description     string    `yaml:"description"`
+	Metric          string    `yaml:"metric"`
+	Condition       Condition `yaml:"condition"`
+	Window          string    `yaml:"window"` // e.g., "30s", "5m"
+	ConfidenceBase  float64   `yaml:"confidence_base"`
+	MinSignals      int       `yaml:"min_signals"`
+	SuggestedCause  string    `yaml:"suggested_cause"`
+	SuggestedAction string    `yaml:"suggested_action"`
+	Enabled         bool      `yaml:"enabled"`
 }
 
 // Correlation defines a multi-signal confidence boost.
 type Correlation struct {
-	Signals         []string `yaml:"signals"`
-	Boost           float64  `yaml:"boost"`
-	Interpretation  string   `yaml:"interpretation"`
+	Signals        []string `yaml:"signals"`
+	Boost          float64  `yaml:"boost"`
+	Interpretation string   `yaml:"interpretation"`
 }
 
 // RulesConfig is the top-level structure of rules.yaml.
 type RulesConfig struct {
-	Rules                []Rule        `yaml:"rules"`
-	Correlations         []Correlation `yaml:"correlations"`
-	SingleSignalPenalty  float64       `yaml:"single_signal_penalty"`
-	Thresholds           struct {
+	Rules               []Rule        `yaml:"rules"`
+	Correlations        []Correlation `yaml:"correlations"`
+	SingleSignalPenalty float64       `yaml:"single_signal_penalty"`
+	Thresholds          struct {
 		Suppress   float64 `yaml:"suppress"`
 		LogOnly    float64 `yaml:"log_only"`
 		TakeAction float64 `yaml:"take_action"`

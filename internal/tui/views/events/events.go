@@ -91,21 +91,24 @@ func (v *View) SetSize(w, h int) {
 		searchH = 1
 	}
 	v.vp.Height = h - 2 - searchH
-	v.dirty = true; v.cached = ""
+	v.dirty = true
+	v.cached = ""
 }
 
-func (v *View) SetTheme(th theme.Theme) { 
+func (v *View) SetTheme(th theme.Theme) {
 	v.theme = th
 	v.styles = buildEventStyles(th)
 	v.search.SetTheme(th)
 	v.dirty = true
 	v.cached = ""
 }
-func (v *View) Focus()                  { v.focused = true }
-func (v *View) Blur()                   { v.focused = false }
+func (v *View) Focus() { v.focused = true }
+func (v *View) Blur()  { v.focused = false }
 func (v *View) StatusLine() string {
 	live := "LIVE"
-	if !v.follow { live = "PAUSED" }
+	if !v.follow {
+		live = "PAUSED"
+	}
 	return fmt.Sprintf("Events [%d]  %s  ·  G live  ·  / filter  ·  ↑↓ scroll", len(v.events), live)
 }
 func (v *View) SelectedContainer() string { return "" }
@@ -116,28 +119,40 @@ func (v *View) Update(tmsg tea.Msg) (views.View, tea.Cmd) {
 		if v.search.Visible() {
 			switch msg.String() {
 			case "esc":
-				v.search.Hide(); v.search.Reset(); v.filter = ""
-				v.dirty = true; return v, nil
+				v.search.Hide()
+				v.search.Reset()
+				v.filter = ""
+				v.dirty = true
+				return v, nil
 			case "enter":
 				v.search.Hide()
-				v.dirty = true; return v, nil
+				v.dirty = true
+				return v, nil
 			}
-			var cmd tea.Cmd; v.search, cmd = v.search.Update(tmsg)
-			v.filter = v.search.Value(); v.dirty = true; return v, cmd
+			var cmd tea.Cmd
+			v.search, cmd = v.search.Update(tmsg)
+			v.filter = v.search.Value()
+			v.dirty = true
+			return v, cmd
 		}
 		switch msg.String() {
 		case "/":
-			v.search.Show(); v.dirty = true; return v, nil
+			v.search.Show()
+			v.dirty = true
+			return v, nil
 		case "g":
-			v.vp.GotoTop(); v.follow = false
+			v.vp.GotoTop()
+			v.follow = false
 		case "G":
 			v.follow = true
 		case "up", "k":
-			v.follow = false; v.vp.LineUp(1)
+			v.follow = false
+			v.vp.LineUp(1)
 		case "down", "j":
 			v.vp.LineDown(1)
 		case "pgup":
-			v.follow = false; v.vp.HalfViewUp()
+			v.follow = false
+			v.vp.HalfViewUp()
 		case "pgdown":
 			v.vp.HalfViewDown()
 		}
@@ -149,7 +164,9 @@ func (v *View) Update(tmsg tea.Msg) (views.View, tea.Cmd) {
 }
 
 func (v *View) View() string {
-	if !v.dirty && v.cached != "" { return v.cached }
+	if !v.dirty && v.cached != "" {
+		return v.cached
+	}
 
 	// Rebuild viewport content.
 	lines := v.buildLines()
@@ -165,7 +182,8 @@ func (v *View) View() string {
 	if v.search.Visible() {
 		sb.WriteString("\n" + v.search.View(v.w))
 	}
-	v.cached = sb.String(); v.dirty = false
+	v.cached = sb.String()
+	v.dirty = false
 	return v.cached
 }
 
@@ -266,7 +284,7 @@ func (v *View) formatSecurityEvent(env *event.EventEnvelope) string {
 			b.WriteString(v.styles.metaDNS.Render(fmt.Sprintf("q: %v (%v)", q, qt)))
 		case event.EventTypePrivEsc:
 			op := env.Metadata["escalation_type"]
-			
+
 			// Try to find the most relevant target based on the escalation type
 			var tgt any
 			if pid, ok := env.Metadata["target_pid"]; ok {
@@ -280,7 +298,7 @@ func (v *View) formatSecurityEvent(env *event.EventEnvelope) string {
 			} else {
 				tgt = "<none>"
 			}
-			
+
 			b.WriteString(v.styles.metaAlert.Render(fmt.Sprintf("op: %v tgt: %v", op, tgt)))
 		case event.EventTypeEscapeIndicator:
 			op := env.Metadata["indicator_type"]

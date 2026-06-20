@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/karim-aboelaiz/selfheal-cp/internal/tui/msg"
 	"github.com/karim-aboelaiz/selfheal-cp/internal/tui/theme"
@@ -27,15 +27,15 @@ type cpuHist struct {
 
 // View implements views.View for the Overview tab.
 type View struct {
-	vp       viewport.Model
-	batches  []msg.DataBatch
-	hists    map[string]*cpuHist // container → sparkline state
-	theme    theme.Theme
-	w, h     int
-	dirty    bool
-	cached   string
-	follow   bool
-	focused  bool
+	vp      viewport.Model
+	batches []msg.DataBatch
+	hists   map[string]*cpuHist // container → sparkline state
+	theme   theme.Theme
+	w, h    int
+	dirty   bool
+	cached  string
+	follow  bool
+	focused bool
 }
 
 func New(th theme.Theme) *View {
@@ -72,24 +72,36 @@ func (v *View) SetSize(w, h int) {
 	v.w, v.h = w, h
 	v.vp.Width = w
 	v.vp.Height = h - 1 // title row
-	v.dirty = true; v.cached = ""
+	v.dirty = true
+	v.cached = ""
 }
 
 func (v *View) SetTheme(th theme.Theme) { v.theme = th; v.dirty = true; v.cached = "" }
 func (v *View) Focus()                  { v.focused = true }
 func (v *View) Blur()                   { v.focused = false }
-func (v *View) StatusLine() string      { return fmt.Sprintf("Overview  [%d batches]  ·  G follow  ·  ↑↓ scroll", len(v.batches)) }
+func (v *View) StatusLine() string {
+	return fmt.Sprintf("Overview  [%d batches]  ·  G follow  ·  ↑↓ scroll", len(v.batches))
+}
 func (v *View) SelectedContainer() string { return "" }
 
 func (v *View) Update(tmsg tea.Msg) (views.View, tea.Cmd) {
 	if msg, ok := tmsg.(tea.KeyMsg); ok {
 		switch msg.String() {
-		case "g": v.vp.GotoTop(); v.follow = false
-		case "G": v.follow = true
-		case "up", "k": v.follow = false; v.vp.LineUp(1)
-		case "down", "j": v.vp.LineDown(1)
-		case "pgup": v.follow = false; v.vp.HalfViewUp()
-		case "pgdown": v.vp.HalfViewDown()
+		case "g":
+			v.vp.GotoTop()
+			v.follow = false
+		case "G":
+			v.follow = true
+		case "up", "k":
+			v.follow = false
+			v.vp.LineUp(1)
+		case "down", "j":
+			v.vp.LineDown(1)
+		case "pgup":
+			v.follow = false
+			v.vp.HalfViewUp()
+		case "pgdown":
+			v.vp.HalfViewDown()
 		}
 		v.dirty = true
 	}
@@ -99,7 +111,9 @@ func (v *View) Update(tmsg tea.Msg) (views.View, tea.Cmd) {
 }
 
 func (v *View) View() string {
-	if !v.dirty && v.cached != "" { return v.cached }
+	if !v.dirty && v.cached != "" {
+		return v.cached
+	}
 
 	var content strings.Builder
 	if len(v.batches) == 0 {
@@ -110,7 +124,9 @@ func (v *View) View() string {
 		content.WriteString(v.renderBatch(b))
 	}
 	v.vp.SetContent(content.String())
-	if v.follow { v.vp.GotoBottom() }
+	if v.follow {
+		v.vp.GotoBottom()
+	}
 
 	title := v.theme.PanelTitle.Render(fmt.Sprintf(
 		"  ◉ Overview  [%d batches]  %s",
@@ -183,7 +199,10 @@ func trunc(s string, n int) string {
 	for _, pfx := range []string{"docker:", "cri:", "systemd:", "cgroup:", "host:"} {
 		s = strings.TrimPrefix(s, pfx)
 	}
-	runes := []rune(s); if len(runes) <= n { return s }
+	runes := []rune(s)
+	if len(runes) <= n {
+		return s
+	}
 	return string(runes[:n-1]) + "…"
 }
 

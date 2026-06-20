@@ -66,7 +66,7 @@ func NewPublisher(cfg PublisherConfig, logger *slog.Logger) (*Publisher, error) 
 	nc, err := nats.Connect(cfg.NATSUrl,
 		nats.Name("selfheal-agent"),
 		nats.RetryOnFailedConnect(true),
-		nats.MaxReconnects(-1),        // retry forever
+		nats.MaxReconnects(-1), // retry forever
 		nats.ReconnectWait(2*time.Second),
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
 			if err != nil {
@@ -122,12 +122,12 @@ func (p *Publisher) ensureStream(ctx context.Context) error {
 			"selfheal.outcomes.*",
 			"selfheal.audit",
 		},
-		Retention:  jetstream.WorkQueuePolicy, // consumed-once
-		MaxAge:     24 * time.Hour,            // replay window
-		Storage:    jetstream.FileStorage,
-		Replicas:   1,
-		Discard:    jetstream.DiscardOld,
-		MaxMsgs:    5_000_000,
+		Retention: jetstream.WorkQueuePolicy, // consumed-once
+		MaxAge:    24 * time.Hour,            // replay window
+		Storage:   jetstream.FileStorage,
+		Replicas:  1,
+		Discard:   jetstream.DiscardOld,
+		MaxMsgs:   5_000_000,
 	})
 	return err
 }

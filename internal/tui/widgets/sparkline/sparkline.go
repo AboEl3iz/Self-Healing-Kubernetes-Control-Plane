@@ -17,16 +17,16 @@ const defaultCap = 120 // number of samples retained
 
 // Model is the sparkline widget state.
 type Model struct {
-	data    []float64 // ring buffer contents (oldest → newest)
-	head    int       // write head in the ring
-	size    int       // number of valid samples
-	cap     int       // ring buffer capacity
-	peak    float64   // rolling maximum for normalisation
-	label   string
-	unit    string
-	color   string // lipgloss-compatible color hex
-	width   int
-	theme   theme.Theme
+	data  []float64 // ring buffer contents (oldest → newest)
+	head  int       // write head in the ring
+	size  int       // number of valid samples
+	cap   int       // ring buffer capacity
+	peak  float64   // rolling maximum for normalisation
+	label string
+	unit  string
+	color string // lipgloss-compatible color hex
+	width int
+	theme theme.Theme
 }
 
 // New creates a Model with the given label, display width, and hex color.
