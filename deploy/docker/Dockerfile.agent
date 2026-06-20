@@ -1,0 +1,14 @@
+# deploy/docker/Dockerfile.agent
+FROM golang:1.26-bookworm AS builder
+RUN apt-get update && apt-get install -y clang llvm libbpf-dev make
+WORKDIR /app
+COPY . .
+RUN make bpf && make agent-build
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=builder /app/bin/agent /app/agent
+COPY --from=builder /app/ebpf/probes/*.o /app/ebpf/probes/
+COPY --from=builder /app/ebpf/security/*.o /app/ebpf/security/
+ENTRYPOINT ["/app/agent"]
