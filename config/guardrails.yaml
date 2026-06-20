@@ -1,0 +1,132 @@
+# SelfHeal-CP — Safety Guardrails Policy
+# ============================================================
+# This file defines all safety boundaries for autonomous actions.
+# The controller MUST respect every constraint defined here.
+# No code override of these values is allowed in production.
+#
+# Environment: set via SELFHEAL_GUARDRAILS_PATH env var
+# Reload:      SIGHUP for live reload without restart
+# ============================================================
+
+guardrails:
+
+  # ─── Global Rate Limiter ────────────────────────────────────────────────────
+  # Hard limit: at most 1 action across the ENTIRE cluster per interval.
+  # Prevents cascading autonomous changes during an outage.
+  global:
+    max_actions_per_10s: 1          # 1 action / cluster / 10 seconds (hard)
+    max_actions_per_minute: 4       # additional per-minute budget
+    dry_run: false                  # set true to audit without touching cluster
+
+  # ─── Dry Run Mode ───────────────────────────────────────────────────────────
+  # When dry_run is true, the full decision pipeline runs but no Kubernetes
+  # resources are modified. Action events are emitted with dry_run=true.
+  # Recommended: enable in Phase 1-2, disable only after Phase 3 validation.
+  dry_run_mode:
+    enabled: false
+    log_would_have_acted: true      # log what action would have been taken
+
+  # ─── Per-Pod Limits ─────────────────────────────────────────────────────────
+  per_pod:
+    max_restarts_per_hour: 3        # pod restart hard cap per hour
+    cooldown_after_restart: 60s     # wait before next restart attempt
+    max_resource_patches_per_hour: 2
+    cooldown_after_resource_patch: 300s
+    max_reschedules_per_hour: 2
+    cooldown_after_reschedule: 120s
+
+  # ─── Per-Node Limits ────────────────────────────────────────────────────────
+  per_node:
+    max_cordons_per_hour: 1
+    cooldown_after_cordon: 600s
+    cordon_requires_min_affected_pods: 3  # must affect ≥3 pods before cordoning
+    drain_requires_manual_approval: true  # NEVER drain autonomously
+
+  # ─── Escalation Policy ──────────────────────────────────────────────────────
+  # State machine: OBSERVING → ACTION_TAKEN → ESCALATING → NODE_SUSPECT → MANUAL
+  escalation:
+    restart_observation_window: 60s   # wait after restart before re-evaluating
+    reschedule_observation_window: 120s
+    max_autonomous_attempts: 3        # after this, require human approval
+    escalation_path:
+      - action: restart_pod
+        max_attempts: 3
+        wait_between_attempts: 60s
+      - action: reschedule_pod
+        max_attempts: 2
+        wait_between_attempts: 120s
+      - action: cordon_node
+        max_attempts: 1
+        requires_pod_count: 3
+      - action: manual             # terminal state — page on-call
+        alert: true
+
+  # ─── Circuit Breaker ────────────────────────────────────────────────────────
+  # If too many actions fail, pause all autonomous activity.
+  # This prevents the controller from thrashing on a stuck cluster.
+  circuit_breaker:
+    enabled: false
+    trigger_on_failure_pct: 50     # if >50% of actions fail within window
+    evaluation_window: 5m
+    response: pause_all_actions
+    pause_duration: 10m
+    alert_on_trip: true
+    alert_message: "SelfHeal circuit breaker tripped — autonomous healing paused"
+
+  # ─── Protected Namespaces ───────────────────────────────────────────────────
+  # Never take autonomous actions on pods in these namespaces.
+  protected_namespaces:
+    - kube-system
+    - kube-public
+    - kube-node-lease
+    - monitoring
+
+  # ─── Protected Pod Labels ───────────────────────────────────────────────────
+  # Pods with these labels are excluded from autonomous actions.
+  protected_labels:
+    - key: "selfheal.io/exclude"
+      value: "true"
+    - key: "critical"
+      value: "true"
+
+  # ─── Action Risk Matrix ─────────────────────────────────────────────────────
+  actions:
+    restart_pod:
+      risk_level: low
+      requires_confirmation: false
+      cooldown: 60s
+      max_per_hour: 3
+
+    patch_resource_limits:
+      risk_level: medium
+      requires_confirmation: false
+      cooldown: 300s
+      max_per_hour: 2
+      max_memory_increase_pct: 100  # max 2x memory increase in one patch
+      max_cpu_increase_pct: 200     # max 3x CPU increase in one patch
+
+    reschedule_pod:
+      risk_level: medium
+      requires_confirmation: false
+      cooldown: 120s
+      max_per_hour: 2
+
+    cordon_node:
+      risk_level: high
+      requires_confirmation: false   # auto-cordon when threshold met
+      cooldown: 600s
+      max_per_hour: 1
+      min_affected_pods: 3
+
+    drain_node:
+      risk_level: critical
+      requires_confirmation: true    # ALWAYS requires human approval
+      cooldown: 3600s
+      max_per_hour: 0               # 0 = never autonomous
+
+    scale_deployment:
+      risk_level: medium
+      requires_confirmation: false
+      cooldown: 300s
+      max_per_hour: 2
+      max_scale_factor: 3           # at most 3x current replicas
