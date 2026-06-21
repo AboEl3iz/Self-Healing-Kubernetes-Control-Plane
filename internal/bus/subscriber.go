@@ -16,6 +16,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -109,21 +110,73 @@ func (s *Subscriber) SubscribeAnomaliesIntelligence(ctx context.Context, handler
 	return s.consume(ctx, "selfheal.anomalies.*", "selfheal-intelligence-anomalies", handler)
 }
 
+// isStaleConsumerErr returns true for errors that mean the consumer handle is
+// no longer valid and must be re-obtained from JetStream. This happens when:
+//   - NATS pod restarted and JetStream is re-initialising ("no responders available")
+//   - The underlying NATS connection reconnected (server-side consumer was cleaned up)
+func isStaleConsumerErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "no responders available") ||
+		strings.Contains(msg, "consumer not found") ||
+		strings.Contains(msg, "stream not found") ||
+		strings.Contains(msg, "connection closed") ||
+		strings.Contains(msg, "EOF")
+}
+
 // consume is the shared pull-consumer loop.
+//
+// On every iteration it holds a live consumer handle. If the handle goes stale
+// (NATS restart, reconnect, JetStream re-init) it recreates it with back-off
+// instead of spinning forever on a dead reference.
 func (s *Subscriber) consume(ctx context.Context, subject, consumerName string, handler MessageHandler) error {
-	cons, err := s.js.CreateOrUpdateConsumer(ctx, s.cfg.StreamName, jetstream.ConsumerConfig{
+	consCfg := jetstream.ConsumerConfig{
 		Name:          consumerName,
 		Durable:       consumerName,
 		FilterSubject: subject,
 		AckPolicy:     jetstream.AckExplicitPolicy,
 		AckWait:       30 * time.Second,
-		MaxDeliver:    3, // after 3 failures → no more redelivery (DLQ TBD)
+		MaxDeliver:    3, // after 3 NAK cycles → stop redelivery (DLQ TBD)
 		DeliverPolicy: jetstream.DeliverAllPolicy,
-	})
-	if err != nil {
-		return fmt.Errorf("subscriber: create consumer %s: %w", consumerName, err)
 	}
 
+	// acquireConsumer obtains (or re-obtains) a live consumer handle.
+	// It retries indefinitely with back-off until the context is cancelled.
+	acquireConsumer := func() (jetstream.Consumer, error) {
+		attempt := 0
+		for {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			cons, err := s.js.CreateOrUpdateConsumer(ctx, s.cfg.StreamName, consCfg)
+			if err == nil {
+				if attempt > 0 {
+					s.logger.Info("subscriber: consumer re-acquired",
+						"consumer", consumerName, "attempts", attempt+1)
+				}
+				return cons, nil
+			}
+			attempt++
+			wait := time.Duration(attempt) * 2 * time.Second
+			if wait > 30*time.Second {
+				wait = 30 * time.Second
+			}
+			s.logger.Warn("subscriber: failed to acquire consumer, retrying",
+				"consumer", consumerName, "error", err, "wait", wait)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(wait):
+			}
+		}
+	}
+
+	cons, err := acquireConsumer()
+	if err != nil {
+		return err
+	}
 	s.logger.Info("subscriber: consuming", "subject", subject, "consumer", consumerName)
 
 	consecutiveFails := 0
@@ -138,9 +191,21 @@ func (s *Subscriber) consume(ctx context.Context, subject, consumerName string, 
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
+			if isStaleConsumerErr(err) {
+				// Consumer handle is dead — re-obtain from JetStream.
+				s.logger.Warn("subscriber: consumer stale, re-acquiring",
+					"consumer", consumerName, "error", err)
+				cons, err = acquireConsumer()
+				if err != nil {
+					return err
+				}
+				consecutiveFails = 0
+				continue
+			}
 			consecutiveFails++
-			s.logger.Warn("subscriber: fetch error", "consumer", consumerName, "error", err, "fails", consecutiveFails)
-			// Exponential backoff up to 10s.
+			s.logger.Warn("subscriber: fetch error",
+				"consumer", consumerName, "error", err, "fails", consecutiveFails)
+			// Linear back-off up to 10 s for non-stale transient errors.
 			wait := time.Duration(consecutiveFails) * time.Second
 			if wait > 10*time.Second {
 				wait = 10 * time.Second
@@ -157,9 +222,7 @@ func (s *Subscriber) consume(ctx context.Context, subject, consumerName string, 
 		for msg := range batch.Messages() {
 			if err := handler(msg.Data()); err != nil {
 				s.logger.Warn("subscriber: handler error — NAKing message",
-					"consumer", consumerName,
-					"error", err,
-				)
+					"consumer", consumerName, "error", err)
 				_ = msg.Nak()
 			} else {
 				_ = msg.Ack()
@@ -167,10 +230,22 @@ func (s *Subscriber) consume(ctx context.Context, subject, consumerName string, 
 		}
 
 		if batchErr := batch.Error(); batchErr != nil && ctx.Err() == nil {
-			s.logger.Warn("subscriber: batch error", "consumer", consumerName, "error", batchErr)
+			if isStaleConsumerErr(batchErr) {
+				// Batch-level stale error — re-acquire consumer on next iteration.
+				s.logger.Warn("subscriber: batch stale error, re-acquiring consumer",
+					"consumer", consumerName, "error", batchErr)
+				cons, err = acquireConsumer()
+				if err != nil {
+					return err
+				}
+			} else {
+				s.logger.Warn("subscriber: batch error",
+					"consumer", consumerName, "error", batchErr)
+			}
 		}
 	}
 }
+
 
 // Close drains the NATS connection.
 func (s *Subscriber) Close() {
