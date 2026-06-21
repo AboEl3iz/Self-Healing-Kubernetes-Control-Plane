@@ -68,6 +68,14 @@ func main() {
 	}
 	defer publisher.Close()
 
+	// 2a. Ensure the SELFHEAL JetStream stream exists before any subscriber tries
+	// to create a consumer against it. Without this, NATS returns 404 and the
+	// analyzer crashes immediately on startup.
+	if err := bus.EnsureStream(ctx, publisher.JetStream(), logger); err != nil {
+		logger.Error("failed to ensure NATS stream", "error", err)
+		os.Exit(1)
+	}
+
 	// 3. Initialize engine
 	engine := analyzer.NewEngine(rules, rulesCfg, publisher, *dryRun, logger)
 

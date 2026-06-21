@@ -1,15 +1,16 @@
 // Package bus provides NATS JetStream publisher for the SelfHeal-CP event pipeline.
 //
 // Topic structure:
-//   selfheal.signals.<node>         ← agent publishes here
-//   selfheal.anomalies.<namespace>  ← analyzer publishes here
-//   selfheal.actions.<namespace>    ← controller publishes here
-//   selfheal.outcomes.<namespace>   ← controller publishes here
-//   selfheal.incidents.<namespace>  ← intelligence reasoner publishes here
-//   selfheal.audit                  ← immutable audit trail
+//
+//	selfheal.signals.<node>         ← agent publishes here
+//	selfheal.anomalies.<namespace>  ← analyzer publishes here
+//	selfheal.actions.<namespace>    ← controller publishes here
+//	selfheal.outcomes.<namespace>   ← controller publishes here
+//	selfheal.incidents.<namespace>  ← intelligence reasoner publishes here
+//	selfheal.audit                  ← immutable audit trail
 //
 // All messages are serialized as JSON for phase 1-3.
-// JetStream stream "SELFHEAL" must be created before publishing.
+// Call EnsureStream before any publish or subscribe operations.
 
 package bus
 
@@ -22,6 +23,44 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
+
+// SelfHealStreamName is the single JetStream stream that carries all selfheal topics.
+const SelfHealStreamName = "SELFHEAL"
+
+// EnsureStream idempotently creates (or updates) the SELFHEAL JetStream stream.
+//
+// This MUST be called once before any publisher or subscriber is used.
+// The stream covers all selfheal.* subjects so that consumers can be bound to it.
+// Using CreateOrUpdateStream means it is safe to call on every startup — it is
+// a no-op if the stream already exists with compatible configuration.
+func EnsureStream(ctx context.Context, js jetstream.JetStream, logger *slog.Logger) error {
+	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+		Name: SelfHealStreamName,
+		// Wildcard covers all selfheal topics published by every component.
+		Subjects: []string{"selfheal.>"},
+		// Retain messages for 24 hours — enough for replay and DLQ inspection.
+		MaxAge: 24 * time.Hour,
+		// File storage so messages survive NATS restarts.
+		Storage: jetstream.FileStorage,
+		// Replicas: 1 is correct for a single NATS node (minikube / dev).
+		// Increase to 3 when running a clustered NATS deployment.
+		Replicas: 1,
+		// Discard old messages when the stream is full (not new ones).
+		Discard: jetstream.DiscardOld,
+		// Keep up to 10M messages (prevents unbounded growth).
+		MaxMsgs: 10_000_000,
+	})
+	if err != nil {
+		return fmt.Errorf("bus: ensure stream %q: %w", SelfHealStreamName, err)
+	}
+	info := stream.CachedInfo()
+	logger.Info("bus: SELFHEAL stream ready",
+		"stream", info.Config.Name,
+		"subjects", info.Config.Subjects,
+		"messages", info.State.Msgs,
+	)
+	return nil
+}
 
 // Publisher publishes events to NATS JetStream.
 type Publisher struct {
@@ -70,6 +109,10 @@ func NewPublisher(cfg PublisherConfig, logger *slog.Logger) (*Publisher, error) 
 	logger.Info("publisher: connected to NATS", "url", cfg.NATSUrl)
 	return p, nil
 }
+
+// JetStream returns the underlying JetStream context.
+// Used by EnsureStream to set up the stream before consuming or publishing.
+func (p *Publisher) JetStream() jetstream.JetStream { return p.js }
 
 // PublishSignal publishes a SignalEvent to selfheal.signals.<node>.
 func (p *Publisher) PublishSignal(ctx context.Context, node string, data []byte) error {

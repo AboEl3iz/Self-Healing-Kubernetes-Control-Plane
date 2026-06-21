@@ -101,6 +101,14 @@ func main() {
 	}
 	defer publisher.Close()
 
+	// Ensure the SELFHEAL JetStream stream exists before the subscriber tries to
+	// create consumers. NATS returns 404 if the stream is missing, which causes
+	// the controller to crash-loop. EnsureStream is idempotent — safe on restart.
+	if err := bus.EnsureStream(ctx, publisher.JetStream(), logger); err != nil {
+		logger.Error("failed to ensure NATS stream", "error", err)
+		os.Exit(1)
+	}
+
 	// ── Telemetry ──────────────────────────────────────────────────────────────
 	metrics := telemetry.Register()
 	audit := telemetry.NewAuditLog(k8sClient, logger)
