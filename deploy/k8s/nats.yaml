@@ -38,7 +38,7 @@ spec:
           image: nats:2.10-alpine
           args:
             - "--jetstream"
-            - "--store_dir=/data"
+            - "--store_dir=/data"   # JetStream stream metadata lives here
             - "--http_port=8222"
             - "--name=selfheal-dev"
           ports:
@@ -46,3 +46,29 @@ spec:
               name: client
             - containerPort: 8222
               name: monitor
+          # /data MUST be a writable volume. Without this mount JetStream
+          # cannot write stream state and returns code=500 on every API call.
+          volumeMounts:
+            - name: jetstream-data
+              mountPath: /data
+          # Wait until JetStream is fully initialized before traffic is sent.
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8222
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+      volumes:
+        # emptyDir gives JetStream a writable tmpfs mount.
+        # Data is lost on pod restart — acceptable for dev/minikube.
+        # For production, replace with a PersistentVolumeClaim.
+        - name: jetstream-data
+          emptyDir: {}
+
