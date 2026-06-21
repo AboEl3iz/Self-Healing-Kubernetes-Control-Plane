@@ -30,11 +30,13 @@ const SelfHealStreamName = "SELFHEAL"
 // EnsureStream idempotently creates (or updates) the SELFHEAL JetStream stream.
 //
 // This MUST be called once before any publisher or subscriber is used.
-// The stream covers all selfheal.* subjects so that consumers can be bound to it.
-// Using CreateOrUpdateStream means it is safe to call on every startup — it is
-// a no-op if the stream already exists with compatible configuration.
+// The stream covers all selfheal.> subjects so that consumers can be bound to it.
+//
+// Retry policy: NATS may not be fully ready immediately after startup, and the
+// analyzer + controller can race to create the stream. We retry up to 10 times
+// with exponential back-off before giving up.
 func EnsureStream(ctx context.Context, js jetstream.JetStream, logger *slog.Logger) error {
-	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+	cfg := jetstream.StreamConfig{
 		Name: SelfHealStreamName,
 		// Wildcard covers all selfheal topics published by every component.
 		Subjects: []string{"selfheal.>"},
@@ -42,25 +44,55 @@ func EnsureStream(ctx context.Context, js jetstream.JetStream, logger *slog.Logg
 		MaxAge: 24 * time.Hour,
 		// File storage so messages survive NATS restarts.
 		Storage: jetstream.FileStorage,
-		// Replicas: 1 is correct for a single NATS node (minikube / dev).
-		// Increase to 3 when running a clustered NATS deployment.
-		Replicas: 1,
-		// Discard old messages when the stream is full (not new ones).
+		// NOTE: Do NOT set Replicas here. On a non-clustered (single-node) NATS
+		// deployment, an explicit Replicas value is treated as a cluster config
+		// and causes err_code=10052 (JSStreamInvalidConfig). Let NATS default it.
+		//
+		// Discard old messages when the stream is full.
 		Discard: jetstream.DiscardOld,
-		// Keep up to 10M messages (prevents unbounded growth).
+		// Keep up to 10 M messages (prevents unbounded growth).
 		MaxMsgs: 10_000_000,
-	})
-	if err != nil {
-		return fmt.Errorf("bus: ensure stream %q: %w", SelfHealStreamName, err)
 	}
-	info := stream.CachedInfo()
-	logger.Info("bus: SELFHEAL stream ready",
-		"stream", info.Config.Name,
-		"subjects", info.Config.Subjects,
-		"messages", info.State.Msgs,
-	)
-	return nil
+
+	const maxAttempts = 10
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		stream, err := js.CreateOrUpdateStream(ctx, cfg)
+		if err == nil {
+			info := stream.CachedInfo()
+			logger.Info("bus: SELFHEAL stream ready",
+				"stream", info.Config.Name,
+				"subjects", info.Config.Subjects,
+				"messages", info.State.Msgs,
+				"attempt", attempt,
+			)
+			return nil
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		// Exponential back-off: 500ms, 1s, 2s, 4s … capped at 10s.
+		wait := time.Duration(500<<uint(attempt-1)) * time.Millisecond
+		if wait > 10*time.Second {
+			wait = 10 * time.Second
+		}
+		logger.Warn("bus: EnsureStream attempt failed, retrying",
+			"attempt", attempt,
+			"max", maxAttempts,
+			"wait", wait,
+			"error", err,
+		)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(wait):
+		}
+	}
+
+	return fmt.Errorf("bus: ensure stream %q: exceeded %d attempts", SelfHealStreamName, maxAttempts)
 }
+
 
 // Publisher publishes events to NATS JetStream.
 type Publisher struct {
